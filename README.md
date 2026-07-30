@@ -1,2 +1,4 @@
-# sms_management_system
-A microservice architecture  SMS management system
+# SMS Microservices Project
+
+A Spring Boot microservices project for processing bulk SMS messages using RabbitMQ.
+
