@@ -28,6 +28,9 @@ public class SmsRequest {
     
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
+
+    @Column(name = "batch_id")
+    private String batchId;
     
     public SmsRequest() {
         this.createdAt = LocalDateTime.now();
@@ -88,5 +91,13 @@ public class SmsRequest {
     
     public void setProcessedAt(LocalDateTime processedAt) {
         this.processedAt = processedAt;
+    }
+
+    public String getBatchId() {
+        return batchId;
+    }
+
+    public void setBatchId(String batchId) {
+        this.batchId = batchId;
     }
 }

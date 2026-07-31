@@ -8,9 +8,9 @@ import com.example.smslistener.service.ExcelReaderService;
 import com.example.smslistener.service.PhoneNumberValidationService;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.JobExecution;
+import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobOperator;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/sms")
@@ -27,18 +28,18 @@ public class SmsController {
     private final ExcelReaderService excelReaderService;
     private final PhoneNumberValidationService validationService;
     private final SmsRequestRepository smsRequestRepository;
-    private final JobLauncher jobLauncher;
+    private final JobOperator jobOperator;
     private final Job smsProcessingJob;
 
     public SmsController(ExcelReaderService excelReaderService,
                          PhoneNumberValidationService validationService,
                          SmsRequestRepository smsRequestRepository,
-                         JobLauncher jobLauncher,
+                         JobOperator jobOperator,
                          Job smsProcessingJob) {
         this.excelReaderService = excelReaderService;
         this.validationService = validationService;
         this.smsRequestRepository = smsRequestRepository;
-        this.jobLauncher = jobLauncher;
+        this.jobOperator = jobOperator;
         this.smsProcessingJob = smsProcessingJob;
     }
 
@@ -65,23 +66,24 @@ public class SmsController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Stage every row as PENDING - the batch job's reader will pick these up
+            String batchId = UUID.randomUUID().toString();
             List<Long> stagedIds = new ArrayList<>();
             for (SmsDto dto : smsDtos) {
                 SmsRequest request = new SmsRequest();
                 request.setPhoneNumber(dto.getPhoneNumber());
                 request.setMessage(dto.getMessage());
+                request.setBatchId(batchId);
                 SmsRequest saved = smsRequestRepository.save(request);
                 stagedIds.add(saved.getId());
             }
 
-            var jobParameters = new JobParametersBuilder()
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("batchId", batchId)
                     .addLong("startAt", System.currentTimeMillis())
                     .toJobParameters();
 
-            JobExecution execution = jobLauncher.run(smsProcessingJob, jobParameters);
+            JobExecution execution = jobOperator.start(smsProcessingJob, jobParameters);
 
-            // Re-read just this upload's records to report accurate counts
             List<SmsRequest> processed = smsRequestRepository.findAllById(stagedIds);
             long validCount = processed.stream().filter(r -> "VALID".equals(r.getStatus())).count();
             long invalidCount = processed.stream().filter(r -> "INVALID".equals(r.getStatus())).count();
@@ -90,6 +92,7 @@ public class SmsController {
             response.setTotalRecords(processed.size());
             response.setValidRecords((int) validCount);
             response.setInvalidRecords((int) invalidCount);
+            response.setBatchesQueued((int) Math.ceil(validCount / 15.0));
             response.setMessage(String.format("Job %d (%s): %d records - %d valid, %d invalid",
                     execution.getId(), execution.getStatus(), processed.size(), validCount, invalidCount));
 

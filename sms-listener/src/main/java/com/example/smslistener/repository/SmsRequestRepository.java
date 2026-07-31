@@ -14,4 +14,10 @@ public interface SmsRequestRepository extends JpaRepository<SmsRequest, Long> {
 
     // Used by the Spring Batch ItemReader to page through PENDING records
     Page<SmsRequest> findByStatus(String status, Pageable pageable);
+
+    // Stable, immutable-per-run filter for the batch reader - use this instead of
+    // paging on findByStatus("PENDING", ...), since the writer flips status away
+    // from PENDING as each page is processed, which shrinks the filtered result
+    // set mid-run and causes the reader to skip records on later pages.
+    Page<SmsRequest> findByBatchId(String batchId, Pageable pageable);
 }

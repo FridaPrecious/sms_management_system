@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Precious Message · Management System</title>
+  <style>
+    /* ----- reset & base ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #f0f4fe;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      color: #1a1e2b;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 780px;
+    }
+
+    /* ----- brand header ----- */
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+      border-bottom: 2px solid #dce6f2;
+      padding-bottom: 8px;
+    }
+
+    .brand h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      background: linear-gradient(135deg, #0b1a33, #2b4a7a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand .tag {
+      font-size: 14px;
+      font-weight: 500;
+      color: #2f4a70;
+      background: #e4edfb;
+      padding: 4px 18px 5px 18px;
+      border-radius: 40px;
+      border: 1px solid #c8d8f0;
+      letter-spacing: 0.2px;
+    }
+
+    /* ----- tagline ----- */
+    .tagline {
+      font-size: 18px;
+      font-weight: 400;
+      color: #1f3a6b;
+      margin-bottom: 30px;
+      padding: 10px 22px;
+      background: #e8f0fe;
+      border-radius: 60px;
+      display: inline-block;
+      border: 1px solid #d0def5;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 4px rgba(0, 20, 40, 0.02);
+    }
+
+    .tagline span {
+      background: #d4e2f8;
+      padding: 0 14px;
+      border-radius: 30px;
+      font-weight: 500;
+      color: #0b2a55;
+    }
+
+    /* ----- cards ----- */
+    .card {
+      background: #ffffff;
+      border-radius: 32px;
+      box-shadow: 0 12px 40px rgba(11, 26, 51, 0.04), 0 2px 12px rgba(0, 20, 40, 0.02);
+      padding: 34px 34px 30px;
+      margin-bottom: 30px;
+      border: 1px solid #e2ebf7;
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+
+    .card:hover {
+      box-shadow: 0 16px 48px rgba(11, 26, 51, 0.07);
+    }
+
+    /* ----- upload zone ----- */
+    .upload-zone {
+      border: 3px dashed #c5d7f0;
+      border-radius: 28px;
+      padding: 48px 28px 40px;
+      text-align: center;
+      background: #fafcff;
+      transition: border-color 0.25s, background 0.2s, transform 0.1s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: #1f4f9e;
+      background: #f2f8ff;
+      transform: scale(1.005);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-zone .upload-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 6px;
+      opacity: 0.7;
+      font-weight: 300;
+      letter-spacing: 2px;
+      color: #1f3a6b;
+    }
+
+    .upload-zone .action-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: #0b1a33;
+    }
+
+    .upload-zone .action-text .btn-outline {
+      background: #dfeafb;
+      padding: 6px 28px;
+      border-radius: 60px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f3a7a;
+      border: 1px solid #c5d7f0;
+      transition: background 0.15s, transform 0.1s;
+      display: inline-block;
+      margin: 0 6px;
+    }
+
+    .upload-zone:hover .btn-outline {
+      background: #cfe0fa;
+      transform: scale(1.02);
+    }
+
+    .upload-zone .file-hint {
+      font-size: 15px;
+      color: #4e6582;
+      margin-top: 14px;
+      font-weight: 400;
+    }
+
+    .upload-zone .file-hint strong {
+      font-weight: 600;
+      color: #1f3a6b;
+      background: #eaf1fa;
+      padding: 2px 14px;
+      border-radius: 30px;
+    }
+
+    .upload-zone .file-name-display {
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f3a7a;
+      background: #e4edfb;
+      padding: 6px 28px;
+      border-radius: 60px;
+      display: inline-block;
+      border: 1px solid #c5d7f0;
+    }
+
+    /* ----- send button ----- */
+    .btn-send {
+      width: 100%;
+      margin-top: 26px;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 60px;
+      background: linear-gradient(135deg, #0b1a33, #1f3d6e);
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.2s, background 0.2s;
+      letter-spacing: 0.4px;
+      box-shadow: 0 8px 24px rgba(11, 26, 51, 0.12);
+    }
+
+    .btn-send:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(11, 26, 51, 0.18);
+      background: linear-gradient(135deg, #0f2242, #244b82);
+    }
+
+    .btn-send:active:not(:disabled) {
+      transform: scale(0.97);
+      box-shadow: 0 4px 12px rgba(11, 26, 51, 0.2);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* ----- summary stats ----- */
+    .summary-grid {
+      display: flex;
+      gap: 14px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .stat-chip {
+      flex: 1 1 100px;
+      background: #f8fbff;
+      border-radius: 24px;
+      padding: 16px 8px;
+      border: 1px solid #e2ebf7;
+      text-align: center;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+
+    .stat-chip:hover {
+      border-color: #b8ceec;
+      transform: translateY(-2px);
+    }
+
+    .stat-chip .number {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: #0b1a33;
+    }
+
+    .stat-chip .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4e6582;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+    }
+
+    .stat-chip.valid .number {
+      color: #0f7b3e;
+    }
+
+    .stat-chip.invalid .number {
+      color: #b13e3e;
+    }
+
+    /* ----- status bar ----- */
+    .status-bar {
+      font-size: 15px;
+      color: #1f3a6b;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 24px;
+      border-radius: 60px;
+      background: #edf4fe;
+      border: 1px solid #d8e4f7;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #c5d7f0;
+      border-top-color: #1f3a7a;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ----- log tabs ----- */
+    .log-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e2ebf7;
+      padding-bottom: 12px;
+    }
+
+    .log-tab {
+      padding: 8px 24px;
+      border: none;
+      background: transparent;
+      color: #4e6582;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 40px;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .log-tab:hover {
+      background: #eaf1fa;
+      color: #1f3a6b;
+    }
+
+    .log-tab.active {
+      background: #0b1a33;
+      color: white;
+    }
+
+    .log-tab .badge {
+      background: #e2ebf7;
+      color: #1f3a6b;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+
+    .log-tab.active .badge {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .log-header h2 {
+      font-size: 19px;
+      font-weight: 700;
+      color: #0b1a33;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .log-header .scope-badge {
+      font-weight: 400;
+      font-size: 13px;
+      color: #4e6582;
+      background: #eaf1fa;
+      padding: 4px 18px;
+      border-radius: 40px;
+      border: 1px solid #d5dfeb;
+    }
+
+    .btn-refresh {
+      background: transparent;
+      border: 1px solid #d5dfeb;
+      color: #1f3a6b;
+      padding: 8px 24px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 100px;
+      justify-content: center;
+    }
+
+    .btn-refresh:hover:not(:disabled) {
+      background: #eaf1fa;
+      border-color: #a8bedb;
+      transform: scale(1.03);
+    }
+
+    .btn-refresh:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-refresh .spinner-small {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #c5d7f0;
+      border-top-color: #1f3a7a;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    /* ----- log entries ----- */
+    .log-empty-state {
+      color: #4e6582;
+      font-size: 16px;
+      text-align: center;
+      padding: 52px 20px;
+      background: #fafcff;
+      border-radius: 24px;
+      border: 2px dashed #d5e0f0;
+      line-height: 1.8;
+    }
+
+    .log-empty-state .highlight {
+      color: #0b1a33;
+      font-weight: 600;
+      background: #eaf1fa;
+      padding: 2px 18px;
+      border-radius: 30px;
+    }
+
+    .result-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 18px 22px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      background: #fafcff;
+      border-left: 6px solid transparent;
+      transition: background 0.1s;
+    }
+
+    .result-entry.success {
+      background: #f0faf5;
+      border-left-color: #0f7b3e;
+    }
+
+    .result-entry.failure {
+      background: #fdf5f5;
+      border-left-color: #b13e3e;
+    }
+
+    .result-entry .status-icon {
+      font-size: 20px;
+      line-height: 1.3;
+      opacity: 0.85;
+      font-weight: 400;
+    }
+
+    .result-entry .message-text {
+      font-size: 15px;
+      line-height: 1.5;
+      color: #1a2639;
+    }
+
+    .result-entry .message-text strong {
+      font-weight: 700;
+    }
+
+    .result-entry.success .message-text strong {
+      color: #0f7b3e;
+    }
+
+    .result-entry.failure .message-text strong {
+      color: #b13e3e;
+    }
+
+    .failed-numbers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      padding-left: 38px;
+    }
+
+    .failed-number-chip {
+      background: #ffffff;
+      border: 1px solid #e4ecf6;
+      color: #b13e3e;
+      font-size: 13px;
+      padding: 5px 18px;
+      border-radius: 40px;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-weight: 500;
+    }
+
+    .failed-number-chip.more {
+      color: #4e6582;
+      border-style: dashed;
+      border-color: #cdd9ed;
+      background: #f5f8ff;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #8a9bb8;
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    .connection-error {
+      background: #fdf5f5;
+      border: 2px solid #b13e3e;
+      border-radius: 12px;
+      padding: 20px;
+      color: #b13e3e;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 24px 16px;
+      }
+      .brand h1 {
+        font-size: 26px;
+      }
+      .upload-zone {
+        padding: 32px 16px;
+      }
+      .tagline {
+        font-size: 16px;
+        padding: 8px 16px;
+      }
+      .result-entry {
+        padding: 14px 16px;
+      }
+      .failed-numbers {
+        padding-left: 16px;
+      }
+      .log-tabs {
+        flex-wrap: wrap;
+      }
+      .log-tab {
+        flex: 1;
+        text-align: center;
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .btn-refresh {
+        min-width: 80px;
+        padding: 6px 16px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- brand -->
+  <div class="brand">
+    <span class="tag"><h1>Precious Message Management System</h1></span>
+  </div>
+
+  <!-- tagline -->
+  <div class="tagline">
+    Send messages that matter
+  </div>
+
+  <!-- upload card -->
+  <div class="card">
+    <div class="upload-zone" id="dropzone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" />
+      
+      <div class="action-text">
+        Drop your file here or <span class="btn-outline">browse</span>
+      </div>
+      <div class="file-hint">
+        <strong>.xlsx</strong> or <strong>.xls</strong> — first column: phone, second column: message
+      </div>
+      <div class="file-name-display" id="fileName"></div>
+    </div>
+
+    <button class="btn-send" id="submitBtn" disabled>Upload & Send</button>
+
+    <!-- summary stats -->
+    <div class="summary-grid" id="summary" style="display: none;">
+      <div class="stat-chip"><div class="number" id="sTotal">0</div><div class="label">Total</div></div>
+      <div class="stat-chip valid"><div class="number" id="sValid">0</div><div class="label">Valid</div></div>
+      <div class="stat-chip invalid"><div class="number" id="sInvalid">0</div><div class="label">Invalid</div></div>
+    </div>
+
+    <!-- status bar -->
+    <div class="status-bar" id="statusLine" style="display: none;"></div>
+  </div>
+
+  <!-- log card -->
+  <div class="card">
+    <div class="log-tabs">
+      <button class="log-tab active" data-view="current" id="currentTab">Current Session <span class="badge" id="currentCount">0</span></button>
+      <button class="log-tab" data-view="history" id="historyTab">History <span class="badge" id="historyCount">0</span></button>
+    </div>
+    
+    <div class="log-header">
+      <h2>
+        Delivery log
+        <span class="scope-badge" id="resultScope"></span>
+      </h2>
+      <button class="btn-refresh" id="refreshBtn">Refresh</button>
+    </div>
+    <div id="resultBody">
+      <div class="log-empty-state">
+        Upload your first file to see your delivery log
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ===== CONFIGURATION - FIXED FOR ALL SCENARIOS =====
+    // Detect if we're running from the listener service (port 8081)
+    const isListenerHost = window.location.port === '8081' || window.location.hostname === 'localhost';
+    
+    // Use absolute URLs with ports for clarity - THIS WORKS IN ALL SCENARIOS
+    const LISTENER_API = 'http://localhost:8081/api/sms';
+    const SENDER_API = 'http://localhost:8082/api/sms';
+    
+    console.log('=== PRECIOUS MESSAGE SYSTEM ===');
+    console.log('Page loaded from:', window.location.href);
+    console.log('Listener API:', LISTENER_API);
+    console.log('Sender API:', SENDER_API);
+
+    // ----- DOM refs -----
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileNameEl = document.getElementById('fileName');
+    const submitBtn = document.getElementById('submitBtn');
+    const summary = document.getElementById('summary');
+    const statusLine = document.getElementById('statusLine');
+    const resultBody = document.getElementById('resultBody');
+    const resultScope = document.getElementById('resultScope');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const currentTab = document.getElementById('currentTab');
+    const historyTab = document.getElementById('historyTab');
+    const currentCount = document.getElementById('currentCount');
+    const historyCount = document.getElementById('historyCount');
+
+    let selectedFile = null;
+    let currentSessionLogs = [];
+    let historyLogs = [];
+    let allLogs = [];
+    let currentView = 'current';
+    let isRefreshing = false;
+    let refreshTimeout = null;
+
+    // ----- helpers -----
+    function setStatus(text, spinning = false) {
+      statusLine.style.display = 'flex';
+      statusLine.innerHTML = (spinning ? '<span class="spinner"></span>' : '') + '<span>' + text + '</span>';
+    }
+
+    function setFile(f) {
+      if (!f) return;
+      selectedFile = f;
+      fileNameEl.textContent = f.name;
+      submitBtn.disabled = false;
+      console.log('File selected:', f.name, 'Size:', f.size, 'bytes');
+    }
+
+    // ----- file events -----
+    fileInput.addEventListener('change', e => {
+      if (e.target.files.length) setFile(e.target.files[0]);
+    });
+
+    ['dragover', 'dragenter'].forEach(ev => {
+      dropzone.addEventListener(ev, e => {
+        e.preventDefault();
+        dropzone.classList.add('drag-over');
+      });
+    });
+    ['dragleave', 'drop'].forEach(ev => {
+      dropzone.addEventListener(ev, e => {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+      });
+    });
+    dropzone.addEventListener('drop', e => {
+      const dt = e.dataTransfer;
+      if (dt.files && dt.files[0]) setFile(dt.files[0]);
+      dropzone.classList.remove('drag-over');
+    });
+
+    // ----- render log -----
+    function renderLogs(logs, scopeLabel = '') {
+      resultScope.textContent = scopeLabel ? '· ' + scopeLabel : '';
+
+      if (!logs || logs.length === 0) {
+        resultBody.innerHTML = `<div class="log-empty-state">No messages in this view</div>`;
+        return;
+      }
+
+      // Filter based on current view
+      let filteredLogs = logs;
+      if (currentView === 'current') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        filteredLogs = logs.filter(log => {
+          if (!log.sentAt) return false;
+          const logDate = new Date(log.sentAt);
+          return logDate >= today;
+        });
+        if (filteredLogs.length === 0 && logs.length > 0) {
+          filteredLogs = logs.slice(0, 10);
+        }
+      } else {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        filteredLogs = logs.filter(log => {
+          if (!log.sentAt) return false;
+          const logDate = new Date(log.sentAt);
+          return logDate < today;
+        });
+      }
+
+      if (filteredLogs.length === 0) {
+        resultBody.innerHTML = `<div class="log-empty-state">No messages in this view</div>`;
+        return;
+      }
+
+      const sent = filteredLogs.filter(l => l.status === 'SENT');
+      const failed = filteredLogs.filter(l => l.status === 'FAILED');
+
+      let html = '';
+
+      if (sent.length > 0) {
+        html += `<div class="result-entry success">
+          <span class="status-icon">+</span>
+          <span class="message-text">Delivered to <strong>${sent.length}</strong> number${sent.length === 1 ? '' : 's'}</span>
+        </div>`;
+      }
+
+      if (failed.length) {
+        const shown = failed.slice(0, 40);
+        const chips = shown.map(l => `<span class="failed-number-chip">${l.phoneNumber || ''}</span>`).join('');
+        const more = failed.length > shown.length ? `<span class="failed-number-chip more">+${failed.length - shown.length} more</span>` : '';
+
+        html += `<div class="result-entry failure">
+          <span class="status-icon">-</span>
+          <span class="message-text">Could not deliver to <strong>${failed.length}</strong> number${failed.length === 1 ? '' : 's'}:</span>
+        </div>`;
+        html += `<div class="failed-numbers">${chips}${more}</div>`;
+      }
+
+      if (filteredLogs.length > 0 && filteredLogs[0].sentAt) {
+        const latest = new Date(filteredLogs[0].sentAt);
+        html += `<div class="timestamp" style="margin-top: 16px; text-align: right; padding-right: 22px;">
+          Last updated: ${latest.toLocaleString()}
+        </div>`;
+      }
+
+      resultBody.innerHTML = html;
+    }
+
+    // ----- fetch logs -----
+    async function loadLogs() {
+      try {
+        console.log('Fetching logs from:', SENDER_API + '/logs');
+        const res = await fetch(SENDER_API + '/logs');
+        
+        if (!res.ok) {
+          console.warn('Logs API returned status:', res.status);
+          return null;
+        }
+        
+        const logs = await res.json();
+        if (Array.isArray(logs)) {
+          logs.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+          console.log('Fetched', logs.length, 'logs');
+          return logs;
+        }
+        return [];
+      } catch (e) {
+        console.error('Failed to fetch logs:', e);
+        return null;
+      }
+    }
+
+    // ----- separate current session from history -----
+    function separateLogs(logs) {
+      if (!logs || logs.length === 0) {
+        currentSessionLogs = [];
+        historyLogs = [];
+        return;
+      }
+
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      currentSessionLogs = logs.filter(log => {
+        if (!log.sentAt) return false;
+        const logDate = new Date(log.sentAt);
+        return logDate >= today;
+      });
+      
+      historyLogs = logs.filter(log => {
+        if (!log.sentAt) return false;
+        const logDate = new Date(log.sentAt);
+        return logDate < today;
+      });
+
+      if (currentSessionLogs.length === 0 && logs.length > 0) {
+        currentSessionLogs = logs.slice(0, 10);
+        historyLogs = logs.slice(10);
+      }
+
+      currentCount.textContent = currentSessionLogs.length;
+      historyCount.textContent = historyLogs.length;
+    }
+
+    // ----- refresh -----
+    async function refreshOverallSummary() {
+      if (isRefreshing) {
+        console.log('Refresh already in progress');
+        return;
+      }
+      
+      isRefreshing = true;
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = 'Refreshing <span class="spinner-small"></span>';
+      
+      try {
+        const logs = await loadLogs();
+        
+        if (logs === null) {
+          resultBody.innerHTML = `
+            <div class="connection-error">
+              <strong>Connection Error</strong><br>
+              Unable to connect to the sender service on port 8082.<br>
+              <small style="color: #666; margin-top: 8px; display: block;">
+                Please ensure sms-sender is running on port 8082.
+              </small>
+            </div>
+          `;
+          resultScope.textContent = '';
+          refreshBtn.innerHTML = 'Retry';
+          refreshBtn.disabled = false;
+          isRefreshing = false;
+          return;
+        }
+        
+        allLogs = logs;
+        separateLogs(logs);
+        
+        if (currentView === 'current') {
+          renderLogs(allLogs, 'current session');
+        } else {
+          renderLogs(allLogs, 'history');
+        }
+        
+        setTimeout(() => {
+          if (refreshBtn) {
+            refreshBtn.innerHTML = 'Refresh';
+            refreshBtn.disabled = false;
+            isRefreshing = false;
+          }
+        }, 2000);
+        
+      } catch (e) {
+        console.error('Error in refresh:', e);
+        refreshBtn.innerHTML = 'Refresh';
+        refreshBtn.disabled = false;
+        isRefreshing = false;
+      }
+    }
+
+    refreshBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+        refreshTimeout = null;
+      }
+      refreshOverallSummary();
+    });
+
+    // ----- tab switching -----
+    function switchTab(view) {
+      currentView = view;
+      
+      document.querySelectorAll('.log-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      if (view === 'current') {
+        currentTab.classList.add('active');
+        renderLogs(allLogs, 'current session');
+      } else {
+        historyTab.classList.add('active');
+        renderLogs(allLogs, 'history');
+      }
+    }
+
+    currentTab.addEventListener('click', () => switchTab('current'));
+    historyTab.addEventListener('click', () => switchTab('history'));
+
+    // ----- submit - FIXED with proper absolute URLs -----
+    submitBtn.addEventListener('click', async () => {
+      if (!selectedFile) {
+        setStatus('Please select a file first.', false);
+        return;
+      }
+
+      submitBtn.disabled = true;
+      summary.style.display = 'none';
+      setStatus('Uploading and validating...', true);
+
+      const beforeLogs = await loadLogs();
+      const beforeCount = beforeLogs ? beforeLogs.length : 0;
+
+      const form = new FormData();
+      form.append('file', selectedFile);
+
+      try {
+        const uploadUrl = LISTENER_API + '/upload';
+        console.log('Uploading to:', uploadUrl);
+        console.log('File:', selectedFile.name, 'Size:', selectedFile.size);
+        
+        const res = await fetch(uploadUrl, { 
+          method: 'POST', 
+          body: form 
+        });
+        
+        console.log('Upload response status:', res.status);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Upload failed:', res.status, errorText);
+          setStatus(`Upload failed (${res.status}). Please check sms-listener on port 8081.`, false);
+          submitBtn.disabled = false;
+          return;
+        }
+        
+        const data = await res.json();
+        console.log('Upload response data:', data);
+
+        document.getElementById('sTotal').textContent = data.totalRecords ?? 0;
+        document.getElementById('sValid').textContent = data.validRecords ?? 0;
+        document.getElementById('sInvalid').textContent = data.invalidRecords ?? 0;
+        summary.style.display = 'flex';
+
+        setStatus('Validated. Waiting for the sender to deliver and log messages...', true);
+
+        const expected = beforeCount + (data.validRecords ?? 0);
+        let attempts = 0;
+        const maxAttempts = 20;
+        
+        const poll = setInterval(async () => {
+          attempts++;
+          console.log(`Poll attempt ${attempts}/${maxAttempts}`);
+          
+          const logs = await loadLogs();
+          
+          if (logs !== null) {
+            allLogs = logs;
+            separateLogs(logs);
+            
+            if (currentView === 'current') {
+              renderLogs(allLogs, 'current session');
+            }
+            
+            const count = logs.length;
+            if (count >= expected || attempts >= maxAttempts) {
+              clearInterval(poll);
+              setStatus(count >= expected ? 'All messages delivered and logged.' : 'Stopped waiting — check the log below, more may still arrive.', false);
+              submitBtn.disabled = false;
+              
+              historyCount.textContent = historyLogs.length;
+              currentCount.textContent = currentSessionLogs.length;
+            }
+          } else if (attempts >= maxAttempts) {
+            clearInterval(poll);
+            setStatus('Unable to verify delivery. Click Refresh to check logs.', false);
+            submitBtn.disabled = false;
+          }
+        }, 2000);
+
+      } catch (e) {
+        console.error('Upload error:', e);
+        setStatus('Could not reach sms-listener on port 8081. Please check if it is running.', false);
+        submitBtn.disabled = false;
+      } finally {
+        selectedFile = null;
+        fileInput.value = '';
+        fileNameEl.textContent = '';
+      }
+    });
+
+    // ---- init ----
+    setTimeout(refreshOverallSummary, 1000);
+  })();
+</script>
+</body>
+</html>

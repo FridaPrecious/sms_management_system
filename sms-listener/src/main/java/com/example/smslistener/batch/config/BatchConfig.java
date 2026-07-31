@@ -5,6 +5,7 @@ import com.example.smslistener.batch.SmsItemWriter;
 import com.example.smslistener.batch.listener.SmsSkipListener;
 import com.example.smslistener.model.SmsRequest;
 import com.example.smslistener.repository.SmsRequestRepository;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
@@ -13,6 +14,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.infrastructure.item.data.RepositoryItemReader;
 import org.springframework.batch.infrastructure.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
@@ -33,12 +35,14 @@ public class BatchConfig {
     @Autowired private SmsSkipListener smsSkipListener;
 
     @Bean
-    public RepositoryItemReader<SmsRequest> smsItemReader() {
+    @StepScope
+    public RepositoryItemReader<SmsRequest> smsItemReader(
+            @Value("#{jobParameters['batchId']}") String batchId) {
         return new RepositoryItemReaderBuilder<SmsRequest>()
                 .name("smsItemReader")
                 .repository(smsRequestRepository)
-                .methodName("findByStatus")
-                .arguments(Collections.singletonList("PENDING"))
+                .methodName("findByBatchId")
+                .arguments(Collections.singletonList(batchId))
                 .sorts(Collections.singletonMap("id", Sort.Direction.ASC))
                 .pageSize(CHUNK_SIZE)
                 .build();
@@ -48,7 +52,7 @@ public class BatchConfig {
     public Step smsValidationStep() {
         return new StepBuilder("smsValidationStep", jobRepository)
                 .<SmsRequest, SmsRequest>chunk(CHUNK_SIZE)
-                .reader(smsItemReader())
+                .reader(smsItemReader(null))
                 .processor(smsItemProcessor)
                 .writer(smsItemWriter)
                 .transactionManager(transactionManager)
