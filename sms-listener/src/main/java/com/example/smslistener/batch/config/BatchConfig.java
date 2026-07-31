@@ -5,13 +5,13 @@ import com.example.smslistener.batch.SmsItemWriter;
 import com.example.smslistener.batch.listener.SmsSkipListener;
 import com.example.smslistener.model.SmsRequest;
 import com.example.smslistener.repository.SmsRequestRepository;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.data.RepositoryItemReader;
-import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
+import org.springframework.batch.infrastructure.item.data.RepositoryItemReader;
+import org.springframework.batch.infrastructure.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,7 +23,6 @@ import java.util.Collections;
 @Configuration
 public class BatchConfig {
 
-    // Your "batch size" is now the chunk size
     public static final int CHUNK_SIZE = 15;
 
     @Autowired private JobRepository jobRepository;
@@ -48,10 +47,11 @@ public class BatchConfig {
     @Bean
     public Step smsValidationStep() {
         return new StepBuilder("smsValidationStep", jobRepository)
-                .<SmsRequest, SmsRequest>chunk(CHUNK_SIZE, transactionManager)
+                .<SmsRequest, SmsRequest>chunk(CHUNK_SIZE)
                 .reader(smsItemReader())
                 .processor(smsItemProcessor)
                 .writer(smsItemWriter)
+                .transactionManager(transactionManager)
                 .faultTolerant()
                 .skipLimit(50)
                 .skip(Exception.class)

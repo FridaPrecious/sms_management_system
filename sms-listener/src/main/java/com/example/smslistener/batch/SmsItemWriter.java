@@ -5,8 +5,8 @@ import com.example.smslistener.dto.SmsDto;
 import com.example.smslistener.model.SmsRequest;
 import com.example.smslistener.repository.SmsRequestRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.batch.item.Chunk;
-import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.infrastructure.item.Chunk;
+import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,10 +27,8 @@ public class SmsItemWriter implements ItemWriter<SmsRequest> {
     public void write(Chunk<? extends SmsRequest> chunk) {
         List<SmsRequest> items = new ArrayList<>(chunk.getItems());
 
-        // Persist the whole chunk (valid + invalid) in one go
         smsRequestRepository.saveAll(items);
 
-        // Build the batch of valid records to push to RabbitMQ
         List<SmsDto> validBatch = new ArrayList<>();
         for (SmsRequest request : items) {
             if ("VALID".equals(request.getStatus())) {

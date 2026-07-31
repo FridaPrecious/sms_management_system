@@ -1,7 +1,7 @@
 package com.example.smslistener.batch.listener;
 
 import com.example.smslistener.model.SmsRequest;
-import org.springframework.batch.core.SkipListener;
+import org.springframework.batch.core.listener.SkipListener;
 import org.springframework.stereotype.Component;
 
 @Component

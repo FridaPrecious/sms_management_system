@@ -2,7 +2,7 @@ package com.example.smslistener.batch;
 
 import com.example.smslistener.model.SmsRequest;
 import com.example.smslistener.service.PhoneNumberValidationService;
-import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
