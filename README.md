@@ -33,6 +33,42 @@ The application consists of two independent microservices:
 
 RabbitMQ acts as the communication layer between the two services, enabling asynchronous message processing. :contentReference[oaicite:2]{index=2}
 
+## RabbitMQ Queue Demonstration
+
+This section demonstrates RabbitMQ's ability to provide reliable asynchronous communication between the **SMS Listener Service** (producer) and the **SMS Sender Service** (consumer). Messages remain safely stored in the queue whenever the consumer is unavailable and are processed automatically once the consumer reconnects.
+
+### RabbitMQ View When the Listener Service Is Active and the Sender Service Is Inactive
+
+The image below shows the RabbitMQ Management Console while the **SMS Listener Service** is running but the **SMS Sender Service** is offline.
+
+During this period:
+
+- The Listener Service continues accepting Excel file uploads.
+- Phone numbers are validated successfully.
+- Valid SMS records are batched and published to the `sms.queue`.
+- Since no consumer is connected, RabbitMQ retains all pending messages in the queue.
+- No messages are lost while the Sender Service is unavailable.
+
+![RabbitMQ Queue with Listener Active and Sender Inactive](images/sms-listener-active-sender-inactive.jpeg)
+
+---
+
+### RabbitMQ View After the Sender Service Becomes Active
+
+The image below shows the RabbitMQ Management Console after the **SMS Sender Service** has been restarted.
+
+Once the Sender Service reconnects:
+
+- RabbitMQ establishes a connection with the consumer.
+- Queued SMS batches begin processing automatically.
+- Pending messages are consumed in the order they were received.
+- Successfully processed messages are removed from the queue.
+- The queue size decreases until all pending messages have been delivered.
+
+This demonstrates the reliability and fault tolerance of RabbitMQ, ensuring that messages remain available for processing even when the consumer experiences temporary downtime.
+
+![RabbitMQ Queue After Sender Service Reconnects](images/sender-back-active.jpeg)
+
 ## Technologies Used
 
 - Java 21
