@@ -123,25 +123,12 @@
       inset: 0;
       opacity: 0;
       cursor: pointer;
+      z-index: 2;
     }
 
-    .upload-zone .upload-icon {
-      font-size: 28px;
-      display: block;
-      margin-bottom: 6px;
-      opacity: 0.7;
-      font-weight: 300;
-      letter-spacing: 2px;
-      color: #1f3a6b;
-    }
-
-    .upload-zone .action-text {
-      font-size: 20px;
-      font-weight: 600;
-      color: #0b1a33;
-    }
-
-    .upload-zone .action-text .btn-outline {
+    /* Make the browse text clickable too */
+    .browse-trigger {
+      cursor: pointer;
       background: #dfeafb;
       padding: 6px 28px;
       border-radius: 60px;
@@ -152,11 +139,23 @@
       transition: background 0.15s, transform 0.1s;
       display: inline-block;
       margin: 0 6px;
+      position: relative;
+      z-index: 1;
+      pointer-events: none;
     }
 
-    .upload-zone:hover .btn-outline {
+    .upload-zone:hover .browse-trigger {
       background: #cfe0fa;
       transform: scale(1.02);
+    }
+
+    .upload-zone .action-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: #0b1a33;
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
     }
 
     .upload-zone .file-hint {
@@ -164,6 +163,9 @@
       color: #4e6582;
       margin-top: 14px;
       font-weight: 400;
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
     }
 
     .upload-zone .file-hint strong {
@@ -184,6 +186,9 @@
       border-radius: 60px;
       display: inline-block;
       border: 1px solid #c5d7f0;
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
     }
 
     /* ----- send button ----- */
@@ -522,6 +527,16 @@
       text-align: center;
     }
 
+    .current-session-label {
+      background: #e8f0fe;
+      color: #1f3a6b;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid #d0def5;
+    }
+
     @media (max-width: 600px) {
       .card {
         padding: 24px 16px;
@@ -569,16 +584,15 @@
 
   <!-- tagline -->
   <div class="tagline">
-    Send messages that matter
+    Send messages to multiple recipients in one go. Upload an Excel file with <span>phone numbers</span> and <span>messages</span> to get started.
   </div>
 
   <!-- upload card -->
   <div class="card">
     <div class="upload-zone" id="dropzone">
       <input type="file" id="fileInput" accept=".xlsx,.xls" />
-      
       <div class="action-text">
-        Drop your file here or <span class="btn-outline">browse</span>
+        Drop your file here or <span class="browse-trigger">browse</span>
       </div>
       <div class="file-hint">
         <strong>.xlsx</strong> or <strong>.xls</strong> — first column: phone, second column: message
@@ -586,7 +600,7 @@
       <div class="file-name-display" id="fileName"></div>
     </div>
 
-    <button class="btn-send" id="submitBtn" disabled>Upload & Send</button>
+    <button class="btn-send" id="submitBtn" disabled>Upload and Send</button>
 
     <!-- summary stats -->
     <div class="summary-grid" id="summary" style="display: none;">
@@ -623,16 +637,11 @@
 
 <script>
   (function() {
-    // ===== CONFIGURATION - FIXED FOR ALL SCENARIOS =====
-    // Detect if we're running from the listener service (port 8081)
-    const isListenerHost = window.location.port === '8081' || window.location.hostname === 'localhost';
-    
-    // Use absolute URLs with ports for clarity - THIS WORKS IN ALL SCENARIOS
+    // ===== CONFIGURATION =====
     const LISTENER_API = 'http://localhost:8081/api/sms';
     const SENDER_API = 'http://localhost:8082/api/sms';
     
     console.log('=== PRECIOUS MESSAGE SYSTEM ===');
-    console.log('Page loaded from:', window.location.href);
     console.log('Listener API:', LISTENER_API);
     console.log('Sender API:', SENDER_API);
 
@@ -658,6 +667,7 @@
     let currentView = 'current';
     let isRefreshing = false;
     let refreshTimeout = null;
+    let lastSubmittedTimestamp = null;
 
     // ----- helpers -----
     function setStatus(text, spinning = false) {
@@ -697,46 +707,47 @@
     });
 
     // ----- render log -----
-    function renderLogs(logs, scopeLabel = '') {
+    function renderLogs(scopeLabel = '') {
       resultScope.textContent = scopeLabel ? '· ' + scopeLabel : '';
 
-      if (!logs || logs.length === 0) {
-        resultBody.innerHTML = `<div class="log-empty-state">No messages in this view</div>`;
-        return;
-      }
+      let logsToShow = [];
 
-      // Filter based on current view
-      let filteredLogs = logs;
       if (currentView === 'current') {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        filteredLogs = logs.filter(log => {
-          if (!log.sentAt) return false;
-          const logDate = new Date(log.sentAt);
-          return logDate >= today;
-        });
-        if (filteredLogs.length === 0 && logs.length > 0) {
-          filteredLogs = logs.slice(0, 10);
-        }
+        logsToShow = currentSessionLogs;
       } else {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        filteredLogs = logs.filter(log => {
-          if (!log.sentAt) return false;
-          const logDate = new Date(log.sentAt);
-          return logDate < today;
-        });
+        logsToShow = historyLogs;
       }
 
-      if (filteredLogs.length === 0) {
-        resultBody.innerHTML = `<div class="log-empty-state">No messages in this view</div>`;
+      if (!logsToShow || logsToShow.length === 0) {
+        if (currentView === 'current') {
+          resultBody.innerHTML = `
+            <div class="log-empty-state">
+              No messages in the current session yet.<br>
+              <span class="highlight">Upload a file to see results here</span>
+            </div>
+          `;
+        } else {
+          resultBody.innerHTML = `
+            <div class="log-empty-state">
+              No history yet.<br>
+              <span class="highlight">Uploaded files will appear here</span>
+            </div>
+          `;
+        }
         return;
       }
 
-      const sent = filteredLogs.filter(l => l.status === 'SENT');
-      const failed = filteredLogs.filter(l => l.status === 'FAILED');
+      const sent = logsToShow.filter(l => l.status === 'SENT');
+      const failed = logsToShow.filter(l => l.status === 'FAILED');
 
       let html = '';
+
+      if (currentView === 'current' && lastSubmittedTimestamp) {
+        const date = new Date(lastSubmittedTimestamp);
+        html += `<div style="margin-bottom: 16px; padding: 8px 16px; background: #e8f0fe; border-radius: 30px; display: inline-block; font-size: 13px; color: #1f3a6b;">
+          Results from: ${date.toLocaleString()}
+        </div>`;
+      }
 
       if (sent.length > 0) {
         html += `<div class="result-entry success">
@@ -757,8 +768,8 @@
         html += `<div class="failed-numbers">${chips}${more}</div>`;
       }
 
-      if (filteredLogs.length > 0 && filteredLogs[0].sentAt) {
-        const latest = new Date(filteredLogs[0].sentAt);
+      if (logsToShow.length > 0 && logsToShow[0].sentAt) {
+        const latest = new Date(logsToShow[0].sentAt);
         html += `<div class="timestamp" style="margin-top: 16px; text-align: right; padding-right: 22px;">
           Last updated: ${latest.toLocaleString()}
         </div>`;
@@ -791,32 +802,27 @@
       }
     }
 
-    // ----- separate current session from history -----
-    function separateLogs(logs) {
-      if (!logs || logs.length === 0) {
-        currentSessionLogs = [];
-        historyLogs = [];
+    // ----- update session logs -----
+    function updateSessionLogs(allLogsFromServer) {
+      if (!allLogsFromServer || allLogsFromServer.length === 0) {
         return;
       }
 
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      currentSessionLogs = logs.filter(log => {
-        if (!log.sentAt) return false;
-        const logDate = new Date(log.sentAt);
-        return logDate >= today;
-      });
-      
-      historyLogs = logs.filter(log => {
-        if (!log.sentAt) return false;
-        const logDate = new Date(log.sentAt);
-        return logDate < today;
-      });
-
-      if (currentSessionLogs.length === 0 && logs.length > 0) {
-        currentSessionLogs = logs.slice(0, 10);
-        historyLogs = logs.slice(10);
+      if (lastSubmittedTimestamp) {
+        currentSessionLogs = allLogsFromServer.filter(log => {
+          if (!log.sentAt) return false;
+          const logDate = new Date(log.sentAt);
+          return logDate >= lastSubmittedTimestamp;
+        });
+        
+        const currentLogIds = new Set(currentSessionLogs.map(l => l.id || l.phoneNumber + l.sentAt));
+        historyLogs = allLogsFromServer.filter(log => {
+          const id = log.id || log.phoneNumber + log.sentAt;
+          return !currentLogIds.has(id);
+        });
+      } else {
+        currentSessionLogs = [];
+        historyLogs = allLogsFromServer;
       }
 
       currentCount.textContent = currentSessionLogs.length;
@@ -855,13 +861,8 @@
         }
         
         allLogs = logs;
-        separateLogs(logs);
-        
-        if (currentView === 'current') {
-          renderLogs(allLogs, 'current session');
-        } else {
-          renderLogs(allLogs, 'history');
-        }
+        updateSessionLogs(logs);
+        renderLogs();
         
         setTimeout(() => {
           if (refreshBtn) {
@@ -898,17 +899,17 @@
       
       if (view === 'current') {
         currentTab.classList.add('active');
-        renderLogs(allLogs, 'current session');
       } else {
         historyTab.classList.add('active');
-        renderLogs(allLogs, 'history');
       }
+      
+      renderLogs();
     }
 
     currentTab.addEventListener('click', () => switchTab('current'));
     historyTab.addEventListener('click', () => switchTab('history'));
 
-    // ----- submit - FIXED with proper absolute URLs -----
+    // ----- submit -----
     submitBtn.addEventListener('click', async () => {
       if (!selectedFile) {
         setStatus('Please select a file first.', false);
@@ -918,6 +919,10 @@
       submitBtn.disabled = true;
       summary.style.display = 'none';
       setStatus('Uploading and validating...', true);
+
+      const submissionTime = new Date();
+      lastSubmittedTimestamp = submissionTime;
+      console.log('Submission time:', submissionTime.toLocaleString());
 
       const beforeLogs = await loadLogs();
       const beforeCount = beforeLogs ? beforeLogs.length : 0;
@@ -957,7 +962,7 @@
 
         const expected = beforeCount + (data.validRecords ?? 0);
         let attempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 25;
         
         const poll = setInterval(async () => {
           attempts++;
@@ -967,10 +972,12 @@
           
           if (logs !== null) {
             allLogs = logs;
-            separateLogs(logs);
+            updateSessionLogs(logs);
             
-            if (currentView === 'current') {
-              renderLogs(allLogs, 'current session');
+            if (currentView !== 'current') {
+              switchTab('current');
+            } else {
+              renderLogs();
             }
             
             const count = logs.length;
@@ -978,9 +985,6 @@
               clearInterval(poll);
               setStatus(count >= expected ? 'All messages delivered and logged.' : 'Stopped waiting — check the log below, more may still arrive.', false);
               submitBtn.disabled = false;
-              
-              historyCount.textContent = historyLogs.length;
-              currentCount.textContent = currentSessionLogs.length;
             }
           } else if (attempts >= maxAttempts) {
             clearInterval(poll);
