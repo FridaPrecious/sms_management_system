@@ -84,6 +84,51 @@
       color: #0b2a55;
     }
 
+    /* ----- warning banner ----- */
+    .warning-banner {
+      background: #fff8e1;
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: none;
+      align-items: flex-start;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+    }
+
+    .warning-banner.visible {
+      display: flex;
+    }
+
+    .warning-banner .warning-icon {
+      font-size: 24px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .warning-banner .warning-content {
+      flex: 1;
+    }
+
+    .warning-banner .warning-title {
+      font-weight: 700;
+      color: #92400e;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .warning-banner .warning-message {
+      color: #78350f;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .warning-banner .warning-message strong {
+      color: #92400e;
+    }
+
     /* ----- cards ----- */
     .card {
       background: #ffffff;
@@ -126,7 +171,6 @@
       z-index: 2;
     }
 
-    /* Make the browse text clickable too */
     .browse-trigger {
       cursor: pointer;
       background: #dfeafb;
@@ -571,6 +615,12 @@
         padding: 6px 16px;
         font-size: 12px;
       }
+      .warning-banner {
+        padding: 12px 16px;
+      }
+      .warning-banner .warning-icon {
+        font-size: 20px;
+      }
     }
   </style>
 </head>
@@ -585,6 +635,19 @@
   <!-- tagline -->
   <div class="tagline">
     Send messages to multiple recipients in one go. Upload an Excel file with <span>phone numbers</span> and <span>messages</span> to get started.
+  </div>
+
+  <!-- Warning Banner - appears when sender is offline -->
+  <div class="warning-banner" id="warningBanner">
+    <div class="warning-icon">i</div>
+    <div class="warning-content">
+      <div class="warning-title">Sender Service Offline</div>
+      <div class="warning-message">
+        The sender service is currently offline. Your messages have been received and will be 
+        <strong>delivered automatically</strong> once the service comes back online. 
+        No action is required from you.
+      </div>
+    </div>
   </div>
 
   <!-- upload card -->
@@ -659,6 +722,7 @@
     const historyTab = document.getElementById('historyTab');
     const currentCount = document.getElementById('currentCount');
     const historyCount = document.getElementById('historyCount');
+    const warningBanner = document.getElementById('warningBanner');
 
     let selectedFile = null;
     let currentSessionLogs = [];
@@ -668,6 +732,8 @@
     let isRefreshing = false;
     let refreshTimeout = null;
     let lastSubmittedTimestamp = null;
+    let isSenderOffline = false;
+    let warningDismissed = false;
 
     // ----- helpers -----
     function setStatus(text, spinning = false) {
@@ -682,6 +748,26 @@
       submitBtn.disabled = false;
       console.log('File selected:', f.name, 'Size:', f.size, 'bytes');
     }
+
+    // ----- warning banner control -----
+    function showSenderOfflineWarning() {
+      if (!warningDismissed) {
+        warningBanner.classList.add('visible');
+        isSenderOffline = true;
+      }
+    }
+
+    function hideSenderOfflineWarning() {
+      warningBanner.classList.remove('visible');
+      isSenderOffline = false;
+      warningDismissed = true;
+    }
+
+    // Allow user to dismiss the warning by clicking on it
+    warningBanner.addEventListener('click', function() {
+      warningDismissed = true;
+      hideSenderOfflineWarning();
+    });
 
     // ----- file events -----
     fileInput.addEventListener('change', e => {
@@ -786,8 +872,15 @@
         
         if (!res.ok) {
           console.warn('Logs API returned status:', res.status);
+          // If we get a 404 or 503, the sender is likely offline
+          if (res.status === 404 || res.status === 503 || res.status === 500) {
+            showSenderOfflineWarning();
+          }
           return null;
         }
+        
+        // If we got a response, sender is online
+        hideSenderOfflineWarning();
         
         const logs = await res.json();
         if (Array.isArray(logs)) {
@@ -798,6 +891,8 @@
         return [];
       } catch (e) {
         console.error('Failed to fetch logs:', e);
+        // If fetch fails (network error, connection refused), sender is offline
+        showSenderOfflineWarning();
         return null;
       }
     }
@@ -844,13 +939,17 @@
         const logs = await loadLogs();
         
         if (logs === null) {
+          // Show the warning banner instead of the error
           resultBody.innerHTML = `
-            <div class="connection-error">
-              <strong>Connection Error</strong><br>
-              Unable to connect to the sender service on port 8082.<br>
-              <small style="color: #666; margin-top: 8px; display: block;">
-                Please ensure sms-sender is running on port 8082.
-              </small>
+            <div class="log-empty-state">
+              <div style="margin-bottom: 12px; font-size: 18px; font-weight: 600; color: #92400e;">Sender Service Offline</div>
+              <div style="color: #666; max-width: 400px; margin: 0 auto; line-height: 1.6;">
+                The sender service is currently unavailable. Your messages are queued and will be 
+                delivered automatically when the service comes back online.
+              </div>
+              <div style="margin-top: 16px; font-size: 13px; color: #999;">
+                Click the banner above to dismiss this message
+              </div>
             </div>
           `;
           resultScope.textContent = '';
@@ -958,6 +1057,15 @@
         document.getElementById('sInvalid').textContent = data.invalidRecords ?? 0;
         summary.style.display = 'flex';
 
+        // Check if sender is offline and show appropriate message
+        if (isSenderOffline) {
+          setStatus('File validated. Messages queued - will be delivered when sender service is back online.', false);
+          submitBtn.disabled = false;
+          // Show the warning banner if not already visible
+          showSenderOfflineWarning();
+          return;
+        }
+
         setStatus('Validated. Waiting for the sender to deliver and log messages...', true);
 
         const expected = beforeCount + (data.validRecords ?? 0);
@@ -988,8 +1096,10 @@
             }
           } else if (attempts >= maxAttempts) {
             clearInterval(poll);
-            setStatus('Unable to verify delivery. Click Refresh to check logs.', false);
+            setStatus('Unable to verify delivery. Messages are queued and will be delivered when the sender service is back online.', false);
             submitBtn.disabled = false;
+            // Show warning banner
+            showSenderOfflineWarning();
           }
         }, 2000);
 
@@ -1006,6 +1116,26 @@
 
     // ---- init ----
     setTimeout(refreshOverallSummary, 1000);
+
+    // Periodically check if sender comes back online (every 30 seconds)
+    setInterval(async () => {
+      if (isSenderOffline) {
+        const logs = await loadLogs();
+        if (logs !== null) {
+          // Sender is back online!
+          hideSenderOfflineWarning();
+          refreshOverallSummary();
+          setStatus('Sender service is back online! Messages are being delivered.', false);
+          // Clear status after 5 seconds
+          setTimeout(() => {
+            if (!statusLine.querySelector('.spinner')) {
+              statusLine.style.display = 'none';
+            }
+          }, 5000);
+        }
+      }
+    }, 30000);
+
   })();
 </script>
 </body>
